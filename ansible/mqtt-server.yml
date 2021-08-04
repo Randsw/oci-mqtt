@@ -1,0 +1,84 @@
+---
+- hosts: all
+  gather_facts: true
+  become: yes
+
+  vars:
+    docker_container_users:
+      - name: "grafana"
+        group: "root" 
+        append: "yes" 
+        UID: 472
+        comment: "Grafana user"
+      - name: "nobody"
+        group: "nogroup" 
+        append: "yes"
+        UID: 65534
+        comment: "Prometheus user"
+
+  pre_tasks:
+
+    - name: Run the equivalent of "apt-get update" as a separate step
+      apt:
+        update_cache: yes
+
+    - name: Install a list of packages
+      apt:
+        pkg:
+          - python3-pip
+          - rsync
+          - nano
+
+    - name: Add the user for docker persistent volume
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        comment: "{{ item.comment }}"
+        uid: "{{ item.UID }}"
+        group: "{{ item.group }}"
+        append: "{{ item.append }}"
+        create_home: "no"
+        shell: "/usr/sbin/nologin"
+      loop: "{{ docker_container_users }}"
+
+    - name: Create swap file
+      command: "fallocate -l 2G /swap_space"
+
+    - name: Set permission to swap file
+      command: "chmod 600 /swap_space "
+
+    - name: Mark file as a swap
+      command: "mkswap /swap_space "
+
+    - name: Enable swap
+      command: "swapon /swap_space"
+
+    - name: Edit /etc/fstab to make swap persistent
+      lineinfile:
+        dest: "/etc/fstab" 
+        state: present 
+        line: "/swap_space      swap        swap          sw          0   0 "
+        insertafter: EOF
+
+    - name: Add firewall rule
+      ansible.builtin.iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: "{{ item }}"
+        state: present
+        jump: ACCEPT
+        ctstate: NEW
+        action: insert
+        rule_num: 5
+      loop:
+        - 80
+        - 443
+        - 1883
+        - 8883
+
+    - name: Save firewall rule
+      command: netfilter-persistent save
+
+  roles:
+    - role: geerlingguy.docker
+    - role: role-app
+

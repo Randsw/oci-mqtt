@@ -1,0 +1,43 @@
+---
+docker_compose_path: /home/{{ ansible_user }}/mqtt/docker-compose.yml
+
+domains: "rand-mqtt.tk"
+
+email: randsw@mail.ru
+
+staging: 0 # 0 - for LE cert, 1 - LE staging
+
+certbot_datapath: "./conf/proxy/certbot"
+
+compose_dir: /home/{{ ansible_user }}/mqtt
+config_dir: /home/{{ ansible_user }}/mqtt/conf
+volume_dir: /home/{{ ansible_user }}/mqtt/volume
+
+#Service config
+docker_subnet: 172.19.0.0/16
+
+services_paths:
+  - path: "{{ volume_dir }}/monitoring/prometheus/prometheus_data"
+    mode: "0775"
+    user: "nobody"
+    group: "nogroup"
+  - path: "{{ volume_dir }}/monitoring/grafana/grafana_data"
+    mode: "0775"
+    user: "grafana"
+    group: "root"
+  - path: "{{ volume_dir }}/rabbitmq/log"
+    mode: "0775"
+    user: "systemd-coredump"
+    group: "systemd-coredump"
+  - path: "{{ volume_dir }}/rabbitmq/lib"
+    mode: "0775"
+    user: "root"
+    group: "root"
+  - path: "{{ volume_dir }}/proxy/certbot/www"
+    mode: "0775"
+    user: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  - path: "{{ volume_dir }}/tg-bot"
+    mode: "0777"
+    user: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"

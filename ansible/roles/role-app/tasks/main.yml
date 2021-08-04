@@ -1,0 +1,109 @@
+---
+- name: Install python packages for docker
+  pip:
+    name:
+      - docker
+      - docker-compose
+
+- name: Create a directory for compose
+  file:
+    path: "{{ compose_dir }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+
+- name: Create a directory for config
+  file:
+    path: "{{ config_dir }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+
+- name: Create a directory for persistent storage
+  file:
+    path: "{{ volume_dir }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+
+- name: Copy services config files to host
+  synchronize:
+    src: "roles/role-app/files/service-conf/"
+    dest: "{{ config_dir }}"
+    rsync_opts:
+      - "--no-perms"
+      - "--no-owner"
+      - "--no-group"
+      - "--size-only"
+      - "--no-times"
+    verify_host: no
+  become: no
+
+- name: create dir for docker containers persistent data
+  file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.user }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ services_paths }}"
+  become: yes
+
+- name: Create .env file
+  template:
+    src: .env.j2
+    dest: "{{ compose_dir }}/.env"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0400'
+
+- name: Configure docker compose file
+  template:
+    src: docker-compose.yaml.j2
+    dest: "{{ docker_compose_path }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+
+- name: Configure init LE script
+  template:
+    src: init-letsencrypt.sh.j2
+    dest: "{{ compose_dir }}/init-letsencrypt.sh"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+
+- name: Configure nginx
+  template:
+    src: nginx.conf.j2
+    dest: "{{ config_dir }}/proxy/nginx.conf"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+
+- name: Run LE init script
+  command: "./init-letsencrypt.sh"
+  args:
+    chdir: "{{ compose_dir }}" 
+  become_user: root
+
+- name: Change mode on key file, so RabbitMQ can read it
+  file:
+    path: "{{ config_dir }}/proxy/certbot/conf/archive/{{ domains }}/privkey1.pem"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Pause for 10 seconds
+  pause:
+    seconds: "10"
+    prompt: "Wait for LE certs become ready"   
+
+- name: Docker-Compose UP
+  docker_compose:
+    project_src: "{{ compose_dir }}"
+    build: yes
+    recreate: always 
