@@ -26,6 +26,11 @@ locals {
     vcn_cidr            = try(var.create_vcn ? module.oci-network.vcn_cidr : data.oci_core_vcns.existing_vcns.virtual_networks[0].cidr_blocks[0])
     TG_ADMIN            = data.sops_file.secret.data["TG_ADMIN"]
     TG_TOKEN            = data.sops_file.secret.data["TG_TOKEN"]
+    domain_record = [for rec in var.domain_record :
+                    merge(rec, { "ip_address" : module.oci-app-instance.public-ip-address })
+                    ]
+    exist_dns_zone_id = var.create_dns ? data.oci_dns_zones.existing_dns_zone.zones[0].id : ""
+    exist_dns_zone_name = var.create_dns ? data.oci_dns_zones.existing_dns_zone.zones[0].name : ""
 }
 
 
@@ -33,6 +38,7 @@ locals {
 module "oci-identity-managment" {
     source = "git@github.com:Randsw/oci-terraform-identity-managment.git"
 
+    #source = "../modules/oci-identity-managment"
     tenancy_id = data.sops_file.secret.data["tenancy"]
     compartment_name = "MQTT"
     exist_compartment_id = data.sops_file.secret.data["tenancy"]
@@ -62,23 +68,29 @@ module "oci-security" {
 module "oci-app-instance" {
     source = "git@github.com:Randsw/oci-terraform-instance.git"
 
-    subnet_id           = module.oci-network.subnet_id
-    ssh_key_public      = var.ssh_key_public
-    ssh_key_private     = var.ssh_key_private
-    region              = var.region
-    image_id            = var.image_id
-    compartment_id      = module.oci-identity-managment.compartm_id
-    instance_name       = var.instance_name
-    vnic_name           = var.vnic_name
-    assign_public_ip    = var.assign_public_ip
-    hostname_label      = var.hostname_label
-    ssh_user            = var.ssh_user
-    remote_exec_command = var.remote_exec_command
-    app_tags            = var.app_tags
+    #source = "../modules/oci-app-instance"
+
+    subnet_id               = module.oci-network.subnet_id
+    ssh_key_public          = var.ssh_key_public
+    ssh_key_private         = var.ssh_key_private
+    region                  = var.region
+    image_id                = var.image_id
+    compartment_id          = module.oci-identity-managment.compartm_id
+    instance_name           = var.instance_name
+    vnic_name               = var.vnic_name
+    assign_public_ip        = var.assign_public_ip
+    hostname_label          = var.hostname_label
+    ssh_user                = var.ssh_user
+    remote_exec_command     = var.remote_exec_command
+    app_tags                = var.app_tags
+    reserve_public_ip       = var.reserve_public_ip
+    reserved_public_ip_name = var.reserved_public_ip_name
 }
 
 module "oci-network" {
     source = "git@github.com:Randsw/oci-terraform-network.git"
+
+    #source = "../modules/oci-network"
 
     compartment_id               = module.oci-identity-managment.compartm_id
     security_list_ids            = "${split(",", module.oci-security.security_list_id)}"
@@ -95,8 +107,14 @@ module "oci-network" {
     dns_zone_name                = var.dns_zone_name
     dns_zone_type                = var.dns_zone_type
     create_vcn                   = var.create_vcn
+    create_dns_zone              = var.create_dns_zone
+    create_dns_record            = var.create_dns_record
     exist_vcn_id                 = try(var.create_vcn ? "" : data.oci_core_vcns.existing_vcns.virtual_networks[0].id)
     exist_vcn_dhcp_options_id    = try(var.create_vcn ? "" : data.oci_core_vcns.existing_vcns.virtual_networks[0].default_dhcp_options_id)
+    exist_dns_zone_id            = local.exist_dns_zone_id
+    exist_dns_zone_name          = local.exist_dns_zone_id
+    domain_record                = local.domain_record 
+    
 }
 
 data "oci_core_vcns" "existing_vcns" {
@@ -105,8 +123,14 @@ data "oci_core_vcns" "existing_vcns" {
     state            = var.vcn_state
 }
 
-resource "null_resource" "ansible_provision" {
-   provisioner "local-exec" {
-        command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u '${var.ssh_user}' -i '${module.oci-app-instance.public-ip-address},' --private-key ${var.ssh_key_private} -e 'TG_ADMIN=${local.TG_ADMIN} TG_TOKEN=${local.TG_TOKEN} staging=0' ansible/mqtt-server.yml"
-   }
+data "oci_dns_zones" "existing_dns_zone" {
+  compartment_id = module.oci-identity-managment.compartm_id
+  name           = var.exist_dns_zone_name
 }
+
+
+# resource "null_resource" "ansible_provision" {
+#    provisioner "local-exec" {
+#         command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u '${var.ssh_user}' -i '${module.oci-app-instance.public-ip-address},' --private-key ${var.ssh_key_private} -e 'TG_ADMIN=${local.TG_ADMIN} TG_TOKEN=${local.TG_TOKEN} staging=0' ansible/mqtt-server.yml"
+#    }
+# }

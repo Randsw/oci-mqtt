@@ -8,9 +8,6 @@ image_id = {
     eu-frankfurt-1 = "ocid1.image.oc1.eu-frankfurt-1.aaaaaaaakdtauwupkvi54552qmli3ozzj5zdwlhdfzcluphhyawzv7tqeu7q"
   }
 
-#name = "OpenVPN"
-
-#compartment_name = "MQTT"
 compartment_name = "MQTT"
 
 instance_name = "MQTT Server"
@@ -61,3 +58,12 @@ tcp_ingress_rule = [{"protocol": "6", "source": "0.0.0.0/0", "description": "All
 
 create_vcn = true
 
+create_dns = false
+
+create_dns_zone = false
+
+create_dns_record = false
+
+domain_record = [{ "domain_name" : "rand-mqtt.tk", "dns_record_type" : "A", "ttl" : "3600" }]
+
+reserve_public_ip = false
