@@ -21,6 +21,14 @@
     group: "{{ ansible_user }}"
     mode: '0755'
 
+- name: Create a directory for proxy config
+  file:
+    path: "{{ config_dir }}/proxy"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+
 - name: Create a directory for persistent storage
   file:
     path: "{{ volume_dir }}"
