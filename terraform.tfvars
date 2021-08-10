@@ -54,7 +54,9 @@ tcp_ingress_rule = [{"protocol": "6", "source": "0.0.0.0/0", "description": "All
                     {"protocol": "6", "source": "0.0.0.0/0", "description": "Allow http", "port": "80"},
                     {"protocol": "6", "source": "0.0.0.0/0", "description": "Allow https", "port": "443"},
                     {"protocol": "6", "source": "0.0.0.0/0", "description": "Allow mqtt", "port": "1883"},
-                    {"protocol": "6", "source": "0.0.0.0/0", "description": "Allow mqtt", "port": "8883"}]
+                    {"protocol": "6", "source": "0.0.0.0/0", "description": "Allow mqtt", "port": "8883"},
+                    {"protocol": "6", "source": "0.0.0.0/0", "description": "Allow mqtt websocket", "port": "15675"},
+                    {"protocol": "6", "source": "0.0.0.0/0", "description": "Allow TLS mqtt websocket", "port": "15676"}]
 
 create_vcn = true
 

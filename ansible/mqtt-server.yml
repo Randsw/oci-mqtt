@@ -74,6 +74,8 @@
         - 443
         - 1883
         - 8883
+        - 15675
+        - 15676
 
     - name: Save firewall rule
       command: netfilter-persistent save
