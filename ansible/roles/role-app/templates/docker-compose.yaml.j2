@@ -153,6 +153,7 @@ services:
     image: rabbitmq:management
     container_name: rabbitmq
     restart: unless-stopped
+    hostname: rabbitmq-mqtt
     expose:
       - 15672
       - 15692
