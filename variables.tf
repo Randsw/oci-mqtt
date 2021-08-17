@@ -186,3 +186,7 @@ variable "reserved_public_ip_name" {
     description = "Display name for reserved public ip resource"
     default = "MQTT"
 }
+
+variable "skip_source_dest_check"{
+    type = bool
+}

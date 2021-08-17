@@ -26,11 +26,12 @@ locals {
     vcn_cidr            = try(var.create_vcn ? module.oci-network.vcn_cidr : data.oci_core_vcns.existing_vcns.virtual_networks[0].cidr_blocks[0])
     TG_ADMIN            = data.sops_file.secret.data["TG_ADMIN"]
     TG_TOKEN            = data.sops_file.secret.data["TG_TOKEN"]
-    domain_record = [for rec in var.domain_record :
-                    merge(rec, { "ip_address" : module.oci-app-instance.public-ip-address })
-                    ]
-    exist_dns_zone_id = var.create_dns ? data.oci_dns_zones.existing_dns_zone.zones[0].id : ""
+    domain_record       = [for rec in var.domain_record :
+                           merge(rec, { "ip_address" : module.oci-app-instance.public-ip-address })
+                          ]
+    exist_dns_zone_id   = var.create_dns ? data.oci_dns_zones.existing_dns_zone.zones[0].id : ""
     exist_dns_zone_name = var.create_dns ? data.oci_dns_zones.existing_dns_zone.zones[0].name : ""
+    cloud-init          = file("cloud-init.yaml")
 }
 
 
@@ -85,6 +86,8 @@ module "oci-app-instance" {
     app_tags                = var.app_tags
     reserve_public_ip       = var.reserve_public_ip
     reserved_public_ip_name = var.reserved_public_ip_name
+    skip_source_dest_check  = var.skip_source_dest_check
+    cloud-init              = local.cloud-init
 }
 
 module "oci-network" {
@@ -127,10 +130,3 @@ data "oci_dns_zones" "existing_dns_zone" {
   compartment_id = module.oci-identity-managment.compartm_id
   name           = var.exist_dns_zone_name
 }
-
-
-# resource "null_resource" "ansible_provision" {
-#    provisioner "local-exec" {
-#         command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u '${var.ssh_user}' -i '${module.oci-app-instance.public-ip-address},' --private-key ${var.ssh_key_private} -e 'TG_ADMIN=${local.TG_ADMIN} TG_TOKEN=${local.TG_TOKEN} staging=0' ansible/mqtt-server.yml"
-#    }
-# }
