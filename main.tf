@@ -57,7 +57,6 @@ module "oci-security" {
     source = "git@github.com:Randsw/oci-terraform-security.git"
 
     vcn_id             = local.vcn_id
-    vcn_cidr           = local.vcn_cidr 
     compartment_id     = module.oci-identity-managment.compartm_id
     app_tags           = var.app_tags
     security_list_name = var.security_list_name
