@@ -63,6 +63,7 @@ module "oci-security" {
     egress_rule        = var.egress_rule
     tcp_ingress_rule   = var.tcp_ingress_rule
     udp_ingress_rule   = var.udp_ingress_rule
+    ingress_rule_all   = var.ingress_rule_all
 }
 
 module "oci-app-instance" {

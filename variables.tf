@@ -141,6 +141,11 @@ variable "udp_ingress_rule" {
     default = null
 }
 
+variable "ingress_rule_all" {
+    type = list(map(string))
+    default = null
+}
+
 variable "create_vcn" {
     type = bool
 }
@@ -152,7 +157,7 @@ variable "vcn_display_name"{
 
 variable "vcn_state" {
     type = string  
-    default = "Available"
+    default = "AVAILABLE"
 }
 
 variable "create_dns" {
